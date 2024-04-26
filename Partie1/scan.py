@@ -1,4 +1,5 @@
 import socket
+import multiprocessing
 
 class PortScanner:
     def __init__(self, host):
@@ -13,17 +14,30 @@ class PortScanner:
                 # Tenter de se connecter au port
                 result = s.connect_ex((self.host, port))
                 if result == 0:
-                    print(f"Port {port} est ouvert")
                     return port
         except Exception as e:
-            print(f"Erreur lors de la vérification du port {port}: {e}")
+            pass
 
     def scan_range(self, start_port, end_port):
         open_ports = []
-        for port in range(start_port, end_port + 1):
-            if self.scan_port(port):
-                open_ports.append(port)
+        # Nombre de processus à utiliser
+        num_processes = multiprocessing.cpu_count()
+        # Création du pool de processus
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            # Utilisation de map pour distribuer les tâches de scan aux processus
+            results = pool.map(self.scan_port, range(start_port, end_port + 1))
+            # Filtrer les résultats pour ne garder que les ports ouverts
+            open_ports = [port for port in results if port is not None]
         return open_ports
+
+if __name__ == "__main__":
+    host = input("Entrez l'hôte à scanner (par exemple, localhost) : ")
+    start_port = int(input("Entrez le port de départ : "))
+    end_port = int(input("Entrez le port de fin : "))
+
+    scanner = PortScanner(host)
+    open_ports = scanner.scan_range(start_port, end_port)
+    print("Ports ouverts :", open_ports)
 
 if __name__ == "__main__":
     host = input("Entrez l'hôte à scanner (par exemple, localhost) : ")

